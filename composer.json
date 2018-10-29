@@ -1,0 +1,21 @@
+{
+    "name": "maximumadvertising/laravel-image-resize",
+    "description": "Dynamically resize an image and returns the URL using Intervention and Storage",
+    "require": {
+        "intervention/image": "^2.4",
+        "illuminate/support": "^5.4"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Mark Padilla",
+            "email": "mark.padilla@maximum.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "autoload": {
+        "psr-4": {
+            "Mxmm\\ImageResize\\": "src"
+        }
+    }
+}
