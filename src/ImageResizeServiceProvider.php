@@ -25,8 +25,12 @@ class ImageResizeServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->app->singleton('imageResize', function () {
-            return new ImageResize();
+        $this->mergeConfigFrom(
+            __DIR__.'/config.php', 'image-resize'
+        );
+
+        $this->app->singleton('imageResize', function ($app) {
+            return new ImageResize($app->config->get('image-resize', []));
         });
     }
 }
