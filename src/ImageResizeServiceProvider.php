@@ -14,7 +14,7 @@ class ImageResizeServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->publishes([
-            __DIR__.'/config.php' => config_path('image-resize.php'),
+            __DIR__ . '/config.php' => config_path('image-resize.php'),
         ]);
     }
 
@@ -25,9 +25,7 @@ class ImageResizeServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->mergeConfigFrom(
-            __DIR__.'/config.php', 'image-resize'
-        );
+        $this->mergeConfigFrom(__DIR__ . '/config.php', 'image-resize');
 
         $this->app->singleton('imageResize', function ($app) {
             return new ImageResize($app->config->get('image-resize', []));
