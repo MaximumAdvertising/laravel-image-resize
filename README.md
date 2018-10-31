@@ -6,7 +6,13 @@ Dynamically resize an image and returns the URL using Intervention and Storage
 
 ## Require
 - Laravel 5+
+- Intervention Image ^2.4
 
+## Supported Filesystem Disks
+- Local
+- Oss (Aliyun Cloud Storage)
+
+S3 is not tested and URL output may not have CDN
 ## Installation
  ```
  composer require maximumadvertising/laravel-image-resize:@dev
@@ -24,6 +30,9 @@ and Alias
 
 ## Usage
 ```$xslt
-<img src="{{ imageResize::url('path\to\image-file', width, height) }}" />
+<img src="{{ imageResize::url('originalDir/filename.jpg', width, height) }}" />
 ```
-
+sample output
+```$xslt
+<img src="https://localhost/thumbs/originalDir/fit/140x160/filename.jpg" />
+```

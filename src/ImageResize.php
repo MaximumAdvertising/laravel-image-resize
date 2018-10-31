@@ -3,7 +3,6 @@ namespace Mxmm\ImageResize;
 
 use Intervention\Image\Facades\Image;
 use Request;
-use Log;
 use Storage;
 use Exception;
 
@@ -114,7 +113,6 @@ class ImageResize
         try {
             $sourceMetaData = Storage::getMetadata($this->path);
         } catch (Exception $e) {
-            Log::error('[Image Resize] source file does not exist [' . $e->getMessage() . ']');
             return false;
         }
 
@@ -129,13 +127,11 @@ class ImageResize
                     $image = Image::make(Storage::get($this->path))
                         ->fit($this->width, $this->height, function ($constraint) {
                             $constraint->aspectRatio();
-                            $constraint->upsize(); // do not enlarge small images
+                            $constraint->upsize();
                         })->encode(Storage::mimeType($this->path));
 
                     $this->upload($this->targetPath, (string) $image, Storage::mimeType($this->path));
                 } catch (Exception $e) {
-                    $msg = '[IMAGE RESIZE] Failed to resize image "';
-                    Log::error($msg . $this->targetPath . '" [' . $e->getMessage() . ']');
                     return false;
                 }
                 break;
