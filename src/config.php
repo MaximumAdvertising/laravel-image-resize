@@ -3,12 +3,6 @@
     return [
         'dir'               =>  'thumbs/',
 
-        'preview-temp-dir'  =>  'temp/previews/',
-
-        'placeholder-video' => '/images/placeholders/video.svg',
-
-        'placeholder-file'  => '/images/placeholders/file.svg',
-
         /*
         |--------------------------------------------------------------------------
         | Image browser cache

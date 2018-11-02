@@ -10,9 +10,9 @@ Dynamically resize an image and returns the URL using Intervention and Storage
 
 ## Supported Filesystem Disks
 - Local
+- S3
 - Oss (Aliyun Cloud Storage)
 
-S3 is not tested and URL output may not have CDN
 ## Installation
  ```
  composer require maximumadvertising/laravel-image-resize:@dev
@@ -25,12 +25,14 @@ and Alias
 ```$xslt
 'ImageResize' => Mxmm\ImageResize\Facade::class,
 ``` 
-#### Publish and override config (Optional)
+#### Publish config and assets (Optional)
 `$ php artisan vendor:publish --provider="Mxmm\ImageResize\ImageResizeServiceProvider"`
 
 ## Usage
 ```$xslt
-<img src="{{ imageResize::url('originalDir/filename.jpg', width, height) }}" />
+<img src="{{ ImageResize::url('originalDir/filename.jpg', width, height, [action]) }}" />
+<img src="{{ ImageResize::url('originalDir/filename.jpg', 200, 200, fit) }}" />
+<img src="{{ ImageResize::url('originalDir/filename.jpg', 200, 200) }}" />
 ```
 sample output
 ```$xslt

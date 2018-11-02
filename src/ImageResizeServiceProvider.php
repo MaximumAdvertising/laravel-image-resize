@@ -15,6 +15,7 @@ class ImageResizeServiceProvider extends ServiceProvider
     {
         $this->publishes([
             __DIR__ . '/config.php' => config_path('image-resize.php'),
+            __DIR__ . '/public/images' => public_path('vendor/laravel-image-resize'),
         ]);
     }
 

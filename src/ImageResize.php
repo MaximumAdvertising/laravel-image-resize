@@ -2,6 +2,8 @@
 namespace Mxmm\ImageResize;
 
 use Intervention\Image\Facades\Image;
+use League\Flysystem\AwsS3v3\AwsS3Adapter;
+use League\Flysystem\Adapter\Local as LocalAdapter;
 use Request;
 use Storage;
 use Exception;
@@ -13,7 +15,7 @@ class ImageResize
  */
     private $path;
 /**
- * Intervention Image method. Currently only supports 'fit' method
+ * Intervention Image method. Currently only supports 'fit' and 'resize' method
  * @var String $action|fit
  */
     private $action;
@@ -21,6 +23,7 @@ class ImageResize
     private $width;
     private $height;
     private $basename;
+    private $adapter;
     private $targetPath;
     private $targetMetaData = [];
     protected $config;
@@ -37,22 +40,16 @@ class ImageResize
         $this->width    = $width;
         $this->height   = $height;
         $this->action   = $action;
+        $this->adapter  = Storage::getAdapter();
         $this->setTargetPath();
         return $this;
     }
 
     private function setTargetPath(): ImageResize
     {
-        $targetDirName   = $this->config['dir'] . pathinfo($this->path)['dirname'] . '/';
-        $targetDirName  .= $this->action . '/' . $this->width . 'x' . $this->height . '/';
-        $targetPath      = $targetDirName . $this->basename;
-        // check for temp preview images
-        if (strpos($this->path, $this->config['preview-temp-dir']) !== false) {
-            $targetPath     = $this->config['preview-temp-dir'] . $this->config['dir'] . $this->action . '_';
-            $targetPath    .= $targetDirName . '/' . $this->basename;
-        }
-
-        $this->targetPath = $targetPath;
+        $targetDirName       = $this->config['dir'] . pathinfo($this->path)['dirname'] . '/';
+        $targetDirName      .= $this->action . '/' . $this->width . 'x' . $this->height . '/';
+        $this->targetPath    = $targetDirName . $this->basename;
         return $this;
     }
 
@@ -68,7 +65,7 @@ class ImageResize
         try {
             $image->targetMetaData = Storage::getMetadata($image->targetPath);
         } catch (Exception $e) {
-            if (config('filesystems.default') != 'local' && !Storage::exists($path)) {
+            if (!$image->adapter instanceof LocalAdapter && !Storage::exists($path)) {
                 if (!Storage::disk('public')->exists($path)) {
                     return '';
                 }
@@ -88,21 +85,32 @@ class ImageResize
 
     private function getUrl(): string
     {
-        $url        = '';
-        $adapter    = Storage::getAdapter();
-
-        if (array_key_exists('info', $this->targetMetaData)) {
-            $url = $this->targetMetaData['info']['url'];
-            // Uses AliOssAdapter getURL method to use CDN
-            if (get_class($adapter) === 'Jacobcyl\AliOSS\AliOssAdapter') {
-                $url = $adapter->getUrl($this->targetPath);
-            }
-        } elseif (array_key_exists('path', $this->targetMetaData)) {
-            $url = Storage::url($this->targetMetaData['path']);
+        if (method_exists($this->adapter, 'getUrl')) {
+            $url = $this->adapter->getUrl($this->targetPath);
+        } elseif ($this->adapter instanceof AwsS3Adapter) {
+            $url = $this->getAwsUrl();
+        } elseif ($this->adapter instanceof LocalAdapter) {
+            $url = Storage::url($this->targetPath);
+        } else {
+            $url = '';
         }
 
         if (Request::secure() == true) {
             $url = str_replace('http:', 'https:', $url);
+        }
+
+        return $url;
+    }
+
+    private function getAwsUrl(): string
+    {
+        $endpoint = $this->adapter->getClient()->getEndpoint();
+        $path     =  '/' . ltrim($this->adapter->getPathPrefix() . $this->targetPath, '/');
+
+        if (!is_null($domain = Storage::getConfig()->get('url'))) {
+            $url = rtrim($domain, '/') . $path;
+        } else {
+            $url  = $endpoint->getScheme() . '://' . $this->adapter->getBucket() . '.' . $endpoint->getHost() . $path;
         }
 
         return $url;
@@ -123,9 +131,10 @@ class ImageResize
 
         switch ($this->action) {
             case 'fit':
+            case 'resize':
                 try {
                     $image = Image::make(Storage::get($this->path))
-                        ->fit($this->width, $this->height, function ($constraint) {
+                        ->{$this->action}($this->width, $this->height, function ($constraint) {
                             $constraint->aspectRatio();
                             $constraint->upsize();
                         })->encode(Storage::mimeType($this->path));
@@ -157,12 +166,12 @@ class ImageResize
 
     private function filePlaceholder(array $info, string $path): string
     {
-        $url = asset($this->config['placeholder-file']);
-
         if (in_array($info['extension'], ['mp4', 'webm'])) {
-            $url = asset($this->config['placeholder-video']);
+            $url = asset('/vendor/laravel-image-resize/images/placeholders/video.svg');
         } elseif (in_array($info['extension'], ['svg'])) {
             $url = Storage::url($path);
+        } else {
+            $url = asset('/vendor/laravel-image-resize/images/placeholders/file.svg');
         }
 
         return $url;
