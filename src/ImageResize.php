@@ -124,8 +124,13 @@ class ImageResize
             return false;
         }
 
-        if (array_key_exists('last-modified', $this->targetMetaData) &&
-            $this->targetMetaData['last-modified'] > $sourceMetaData['last-modified']) {
+        if (array_key_exists('timestamp', $this->targetMetaData) &&
+            $this->targetMetaData['timestamp'] > $sourceMetaData['timestamp']) {
+            return false;
+        }
+
+        if (array_key_exists('info', $this->targetMetaData) &&
+            $this->targetMetaData['info']['filetime'] > $sourceMetaData['info']['filetime']) {
             return false;
         }
 
