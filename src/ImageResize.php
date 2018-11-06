@@ -53,7 +53,7 @@ class ImageResize
         return $this;
     }
 
-    public static function url(string $path, int $width, int $height, $action = 'fit'): string
+    public static function url(string $path = null, int $width = 0, int  $height = 0, string $action = 'fit'): string
     {
         if (!$path || $width < 1 || $height < 1) {
             return '';
