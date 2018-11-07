@@ -4,20 +4,21 @@ namespace Mxmm\ImageResize;
 use Intervention\Image\Facades\Image;
 use League\Flysystem\AwsS3v3\AwsS3Adapter;
 use League\Flysystem\Adapter\Local as LocalAdapter;
+use Illuminate\Support\Facades\Cache;
 use Request;
 use Storage;
 use Exception;
 
 class ImageResize
 {
-/**
-* @var String $path Image source file path
- */
+    /**
+     * @var String $path Image source file path
+     */
     private $path;
-/**
- * Intervention Image method. Currently only supports 'fit' and 'resize' method
- * @var String $action|fit
- */
+    /**
+     * Intervention Image method. Currently only supports 'fit' and 'resize' method
+     * @var String $action|fit
+     */
     private $action;
 
     private $width;
@@ -26,6 +27,8 @@ class ImageResize
     private $adapter;
     private $targetPath;
     private $targetMetaData = [];
+    private $targetTimestamp;
+    private $sourceTimestamp;
     protected $config;
 
     public function __construct(array $config, string $path = null)
@@ -42,6 +45,15 @@ class ImageResize
         $this->action   = $action;
         $this->adapter  = Storage::getAdapter();
         $this->setTargetPath();
+
+        if (Cache::has($this->targetPath)) {
+            $this->targetTimestamp = Cache::get($this->targetPath);
+        }
+
+        if (Cache::has($this->path)) {
+            $this->sourceTimestamp = Cache::get($this->path);
+        }
+
         return $this;
     }
 
@@ -53,7 +65,59 @@ class ImageResize
         return $this;
     }
 
-    public static function url(string $path = null, int $width = 0, int  $height = 0, string $action = 'fit'): string
+    private function setTargetMetaData(): bool
+    {
+        if ($this->targetTimestamp) {
+            return true;
+        }
+
+        try {
+            $this->targetMetaData  = Storage::getMetadata($this->targetPath);
+            $this->targetTimestamp = $this->setTimestamp($this->targetPath, $this->targetMetaData);
+        } catch (Exception $e) {
+            if (!$this->adapter instanceof LocalAdapter && !Storage::exists($this->path)) {
+                if (!Storage::disk('public')->exists($this->path)) {
+                    return false;
+                }
+                // File exists in local public disk but not in cloud
+                $this->upload(
+                    $this->path,
+                    Storage::disk('public')->get($this->path),
+                    Storage::disk('public')->mimeType($this->path)
+                );
+            }
+        }
+
+        return true;
+    }
+
+    private function setTimestamp($key, $metadata)
+    {
+        if (array_key_exists('timestamp', $metadata)) {
+            $value = $metadata['timestamp'];
+        } elseif (array_key_exists('info', $metadata)) {
+            $value = $metadata['info']['filetime'];
+        } else {
+            return '';
+        }
+
+        Cache::put($key, $value, $this->config['cache-expiry']);
+        return $value;
+    }
+
+    private function setSourceTimeStamp(): bool
+    {
+        try {
+            $sourceMetaData = Storage::getMetadata($this->path);
+        } catch (Exception $e) {
+            return false;
+        }
+
+        $this->sourceTimestamp = $this->setTimestamp($this->path, $sourceMetaData);
+        return true;
+    }
+
+    public static function url(string $path = null, $width = 0, $height = 0, $action = 'fit'): string
     {
         if (!$path || $width < 1 || $height < 1) {
             return '';
@@ -62,16 +126,8 @@ class ImageResize
         $image = new ImageResize(config('image-resize'), $path);
         $image->settings($width, $height, $action);
 
-        try {
-            $image->targetMetaData = Storage::getMetadata($image->targetPath);
-        } catch (Exception $e) {
-            if (!$image->adapter instanceof LocalAdapter && !Storage::exists($path)) {
-                if (!Storage::disk('public')->exists($path)) {
-                    return '';
-                }
-                // File exists in local public disk but not in cloud
-                $image->upload($path, Storage::disk('public')->get($path), Storage::disk('public')->mimeType($path));
-            }
+        if (!$image->setTargetMetaData()) {
+            return '';
         }
 
         if (!in_array(pathinfo($path)['extension'], ['jpg', 'jpeg', 'png', 'gif'])) {
@@ -118,19 +174,12 @@ class ImageResize
 
     private function resize(): bool
     {
-        try {
-            $sourceMetaData = Storage::getMetadata($this->path);
-        } catch (Exception $e) {
-            return false;
+        if (!$this->sourceTimestamp) {
+            $this->setSourceTimeStamp();
         }
 
-        if (array_key_exists('timestamp', $this->targetMetaData) &&
-            $this->targetMetaData['timestamp'] > $sourceMetaData['timestamp']) {
-            return false;
-        }
-
-        if (array_key_exists('info', $this->targetMetaData) &&
-            $this->targetMetaData['info']['filetime'] > $sourceMetaData['info']['filetime']) {
+        if (!$this->sourceTimestamp || $this->targetTimestamp > $this->sourceTimestamp) {
+            // source file doesn't exist or older that target file
             return false;
         }
 
@@ -152,8 +201,6 @@ class ImageResize
             default:
                 return false;
         }
-
-        $this->targetMetaData = Storage::getMetadata($this->targetPath);
 
         return true;
     }
