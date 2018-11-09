@@ -11,6 +11,7 @@ use Exception;
 
 class ImageResize
 {
+    protected $config;
     /**
      * @var String $path Image source file path
      */
@@ -29,7 +30,6 @@ class ImageResize
     private $targetMetaData = [];
     private $targetTimestamp;
     private $sourceTimestamp;
-    protected $config;
 
     public function __construct(array $config, string $path = null)
     {
@@ -38,7 +38,29 @@ class ImageResize
         $this->basename     = pathinfo($this->path)['basename'];
     }
 
-    private function settings(int $width, int $height, string $action = 'fit'): ImageResize
+    public static function url(string $path = null, $width = 0, $height = 0, $action = 'fit'): string
+    {
+        if (!$path || $width < 1 || $height < 1) {
+            return '';
+        }
+
+        $image = new ImageResize(config('image-resize'), $path);
+        $image->settings($width, $height, $action);
+
+        if (!$image->setTargetMetaData()) {
+            return '';
+        }
+
+        if (!in_array(pathinfo($path)['extension'], ['jpg', 'jpeg', 'png', 'gif'])) {
+            return $image->filePlaceholder(pathinfo($path), $path);
+        }
+
+        $image->resize();
+
+        return $image->getUrl();
+    }
+
+    private function settings(int $width, int $height, $action = 'fit'): ImageResize
     {
         $this->width    = $width;
         $this->height   = $height;
@@ -115,28 +137,6 @@ class ImageResize
 
         $this->sourceTimestamp = $this->setTimestamp($this->path, $sourceMetaData);
         return true;
-    }
-
-    public static function url(string $path = null, $width = 0, $height = 0, $action = 'fit'): string
-    {
-        if (!$path || $width < 1 || $height < 1) {
-            return '';
-        }
-
-        $image = new ImageResize(config('image-resize'), $path);
-        $image->settings($width, $height, $action);
-
-        if (!$image->setTargetMetaData()) {
-            return '';
-        }
-
-        if (!in_array(pathinfo($path)['extension'], ['jpg', 'jpeg', 'png', 'gif'])) {
-            return $image->filePlaceholder(pathinfo($path), $path);
-        }
-
-        $image->resize();
-
-        return $image->getUrl();
     }
 
     private function getUrl(): string

@@ -13,7 +13,7 @@
             "email": "mark.padilla@maximum.com"
         }
     ],
-    "minimum-stability": "RC",
+    "minimum-stability": "stable",
     "autoload": {
         "psr-4": {
             "Mxmm\\ImageResize\\": "src"
