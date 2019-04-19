@@ -18,5 +18,15 @@
         "psr-4": {
             "Mxmm\\ImageResize\\": "src"
         }
+    },
+    "extra":{
+        "laravel":{
+            "providers":[
+                "Mxmm\\ImageResize\\ImageResizeServiceProvider"
+            ],
+            "aliases":{
+                "ImageResize": "Mxmm\\ImageResize\\Facade"
+            }
+        }
     }
 }

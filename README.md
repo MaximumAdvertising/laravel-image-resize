@@ -14,19 +14,15 @@ Dynamically resize an image and returns the URL using Intervention and Storage
 - Oss (Aliyun Cloud Storage)
 
 ## Installation
+This package can be installed through Composer.
  ```
- composer require maximumadvertising/laravel-image-resize:@dev
+composer require maximumadvertising/laravel-image-resize:@dev
  ```
- Add to package service providers
- ```$xslt
-Mxmm\ImageResize\ImageResizeServiceProvider::class,
-```
-and Alias
-```$xslt
-'ImageResize' => Mxmm\ImageResize\Facade::class,
-``` 
-#### Publish config and assets (Optional)
-`$ php artisan vendor:publish --provider="Mxmm\ImageResize\ImageResizeServiceProvider"`
+
+Publish config and assets (Optional)
+ ```
+php artisan vendor:publish --provider="Mxmm\ImageResize\ImageResizeServiceProvider"
+ ```
 
 ## Usage
 ```$xslt
