@@ -5,8 +5,8 @@ use Intervention\Image\Facades\Image;
 use League\Flysystem\AwsS3v3\AwsS3Adapter;
 use League\Flysystem\Adapter\Local as LocalAdapter;
 use Illuminate\Support\Facades\Cache;
-use Request;
-use Storage;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\Request;
 use Exception;
 
 class ImageResize
@@ -38,9 +38,9 @@ class ImageResize
         $this->basename     = pathinfo($this->path)['basename'];
     }
 
-    public static function url(string $path = null, $width = 0, $height = 0, $action = 'fit'): string
+    public static function url(string $path = null, int $width = null, int $height = null, string $action = 'fit'): string
     {
-        if (!$path || $width < 1 || $height < 1) {
+        if (!$path || $width < 1 && $height < 1) {
             return '';
         }
 
@@ -60,7 +60,7 @@ class ImageResize
         return $image->getUrl();
     }
 
-    private function settings(int $width, int $height, $action = 'fit'): ImageResize
+    private function settings(int $width = null, int $height = null, $action = 'fit'): ImageResize
     {
         $this->width    = $width;
         $this->height   = $height;
@@ -127,7 +127,7 @@ class ImageResize
         return $value;
     }
 
-    private function setSourceTimeStamp(): bool
+    private function setSourceTimestamp(): bool
     {
         try {
             $sourceMetaData = Storage::getMetadata($this->path);
@@ -175,7 +175,7 @@ class ImageResize
     private function resize(): bool
     {
         if (!$this->sourceTimestamp) {
-            $this->setSourceTimeStamp();
+            $this->setSourceTimestamp();
         }
 
         if (!$this->sourceTimestamp || $this->targetTimestamp > $this->sourceTimestamp) {
