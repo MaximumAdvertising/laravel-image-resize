@@ -19,6 +19,19 @@ This package can be installed through Composer.
 composer require maximumadvertising/laravel-image-resize:@dev
  ```
 
+For Laravel 5.4 and lower, you'll have to register the service provider and alias manually.
+
+Add to service providers
+
+ ```$xslt
+Mxmm\ImageResize\ImageResizeServiceProvider::class,
+ ```
+
+And alias
+ ```$xslt	
+'ImageResize' => Mxmm\ImageResize\Facade::class,	
+ ```
+
 Publish config and assets (Optional)
  ```
 php artisan vendor:publish --provider="Mxmm\ImageResize\ImageResizeServiceProvider"
