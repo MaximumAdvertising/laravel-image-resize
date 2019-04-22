@@ -38,26 +38,42 @@ class ImageResize
         $this->basename     = pathinfo($this->path)['basename'];
     }
 
+    /**
+     * @param string|null $path
+     * @param int|null $width
+     * @param int|null $height
+     * @param string $action
+     * @return string
+     */
     public static function url(string $path = null, int $width = null, int $height = null, string $action = 'fit'): string
+    {
+        return (new ImageResize(config('image-resize'), $path))->getResizedImage($path, $width, $height, $action);
+    }
+
+    public static function path(string $path = null, int $width = null, int $height = null, string $action = 'fit'): string
+    {
+        return (new ImageResize(config('image-resize'), $path))->getResizedImage($path, $width, $height, $action, false);
+    }
+
+    private function getResizedImage(string $path = null, int $width = null, int $height = null, string $action = 'fit', $url = true): string
     {
         if (!$path || $width < 1 && $height < 1) {
             return '';
         }
 
-        $image = new ImageResize(config('image-resize'), $path);
-        $image->settings($width, $height, $action);
+        $this->settings($width, $height, $action);
 
-        if (!$image->setTargetMetaData()) {
+        if (!$this->setTargetMetaData()) {
             return '';
         }
 
         if (!in_array(pathinfo($path)['extension'], ['jpg', 'jpeg', 'png', 'gif'])) {
-            return $image->filePlaceholder(pathinfo($path), $path);
+            return $this->filePlaceholder(pathinfo($path), $path);
         }
 
-        $image->resize();
+        $this->resize();
 
-        return $image->getUrl();
+        return $url === true ? $this->getUrl() : $this->targetPath;
     }
 
     private function settings(int $width = null, int $height = null, $action = 'fit'): ImageResize
@@ -81,9 +97,13 @@ class ImageResize
 
     private function setTargetPath(): ImageResize
     {
-        $targetDirName       = $this->config['dir'] . pathinfo($this->path)['dirname'] . '/';
+        $dirName = dirname($this->path);
+
+        $targetDirName       = $this->config['dir'];
+        $targetDirName      .= $dirName !== '.' && $dirName !== '/' ? ltrim($dirName, '/') . '/' : '';
         $targetDirName      .= $this->action . '/' . $this->width . 'x' . $this->height . '/';
         $this->targetPath    = $targetDirName . $this->basename;
+
         return $this;
     }
 
