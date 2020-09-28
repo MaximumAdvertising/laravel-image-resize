@@ -1,4 +1,4 @@
-# Image Resize Helper for Laravel 5.x
+# Image Resize Helper for Laravel 
 
 Dynamically resize an image and returns the URL using Intervention and Storage
 
@@ -7,7 +7,7 @@ Dynamically resize an image and returns the URL using Intervention and Storage
 
 ## Require
 
-- Laravel 5+
+- Laravel 5 or 6
 - Intervention Image ^2.4
 
 ## Supported Filesystem Drivers
