@@ -61,13 +61,17 @@ class ImageResize
             return '';
         }
 
+        if (!($extension = pathinfo($path)['extension'] ?? null)) {
+            return '';
+        }
+
         $this->settings($width, $height, $action);
 
         if (!$this->setTargetMetaData()) {
             return '';
         }
 
-        if (!in_array(pathinfo($path)['extension'], ['jpg', 'jpeg', 'png', 'gif'])) {
+        if (!in_array(strtolower($extension), ['jpg', 'jpeg', 'png', 'gif'])) {
             return $this->filePlaceholder(pathinfo($path), $path);
         }
 
